@@ -16,6 +16,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
     var bombTimer : Timer?
     var ceil : SKSpriteNode?
     var scoreLable : SKLabelNode?
+    var highScoreLabel : SKLabelNode?
     var yourScoreLabel : SKLabelNode?
     var finalScoreLabel : SKLabelNode?
     
@@ -25,20 +26,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
     let groundAndCeilCategory: UInt32 = 0x1 << 4
     
     var score = 0
-    
+    //var highScore = UserDefaults.standard.integer(forKey: "highscore")
     override func didMove(to view: SKView) {
         
         // Get label node from scene and store it for use later
         physicsWorld.contactDelegate = self
-        
+
         coinMan = childNode(withName: "coinMan") as? SKSpriteNode
         coinMan?.physicsBody?.categoryBitMask = coinManCategory
         coinMan?.physicsBody?.contactTestBitMask = coinCategory | bombCategory
         coinMan?.physicsBody?.collisionBitMask = groundAndCeilCategory
+        
+
         var coinManRun : [SKTexture] = []
+
         for number in 1...6 {
+
             coinManRun.append(SKTexture(imageNamed: "frame-\(number)"))
-        }
+    }
         coinMan?.run(SKAction.repeatForever(SKAction.animate(with: coinManRun, timePerFrame: 0.09)))
 
         
@@ -47,11 +52,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
         ceil?.physicsBody?.collisionBitMask = coinManCategory
         
         scoreLable = childNode(withName: "scoreLabel") as? SKLabelNode
-        
+        highScoreLabel = childNode(withName: "highScoreLabel") as? SKLabelNode
+         highScoreLabel?.text = "High Score: \( UserDefaults.standard.integer(forKey: "highscore"))"
       startTimers()
       createGrass()
         
     }
+    
+    
+    
+
+    
+    
+    
     
     func createGrass()
     {
@@ -67,7 +80,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
             addChild(grass)
             
             let grassX = -size.width / 2 + grass.size.width + grass.size.width * CGFloat(number)
-            let grassY = -size.height / 2 + grass.size.height / 2 + 18
+            let grassY = -size.height / 2 + grass.size.height / 2 
             grass.position = CGPoint(x: grassX, y: grassY)
             
             let speed = 100.0
@@ -129,9 +142,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
 
     
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
         if scene?.isPaused == false{
-        coinMan?.physicsBody?.applyForce(CGVector(dx: 0, dy: 80000))
+            coinMan?.texture = SKTexture(imageNamed: "hit")
+        coinMan?.physicsBody?.applyForce(CGVector(dx: 0, dy: 40000))
         }
+        
         let touch = touches.first
         if let location = touch?.location(in: self){
             let theNodes = nodes(at: location)
@@ -151,17 +167,33 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
         }
     }
     
+    
     func didBegin(_ contact: SKPhysicsContact) {
         
         if contact.bodyA.categoryBitMask == coinCategory{
             contact.bodyA.node?.removeFromParent()
+            
             score += 1
             scoreLable?.text = "Score: \(score)"
+            UserDefaults.standard.set(score, forKey: "highscore")
+           if score > UserDefaults.standard.integer(forKey: "highscore")
+           {
+            UserDefaults.standard.set(score, forKey: "highscore")
+            highScoreLabel?.text = "High Score: \( UserDefaults.standard.integer(forKey: "highscore"))"
+           }
         }
+        
         if contact.bodyB.categoryBitMask == coinCategory{
             contact.bodyB.node?.removeFromParent()
             score += 1
             scoreLable?.text = "Score: \(score)"
+
+           if score > UserDefaults.standard.integer(forKey: "highscore")
+           {
+                UserDefaults.standard.set(score, forKey: "highscore")
+                highScoreLabel?.text = "High Score: \( UserDefaults.standard.integer(forKey: "highscore"))"
+
+          }
         }
         
         if contact.bodyA.categoryBitMask == bombCategory{
@@ -177,6 +209,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate  {
   
     func gameOver()
     {
+        coinMan?.texture = SKTexture(imageNamed:"hit")
         scene?.isPaused = true
         coinTimer?.invalidate()
         bombTimer?.invalidate()
